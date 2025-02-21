@@ -9,7 +9,9 @@
   "dependencies": {
     "body-parser": "^1.20.3",
     "express": "^4.21.2",
-    "fabric-ca-client": "^2.2.19",
-    "fabric-network": "^2.2.19"
+    "fabric-ca-client": "^2.2.20",
+    "fabric-network": "^2.2.20",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1"
   }
 }

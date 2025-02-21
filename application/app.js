@@ -9,7 +9,7 @@ class LandRegistryApp {
         this.chaincodeName = 'land-registry';
     }
 
-    async initialize() {
+    async initialize(userId) {
         try {
             const ccpPath = path.resolve(__dirname, '..', '..', 'test-network', 'organizations', 'peerOrganizations', 'org1.example.com', 'connection-org1.json');
             
@@ -25,21 +25,17 @@ class LandRegistryApp {
             this.wallet = await Wallets.newFileSystemWallet(walletPath);
             console.log('Wallet créée à:', walletPath);
 
-            const identity = await this.wallet.get('appUser');
+            const identity = await this.wallet.get(userId);
             if (!identity) {
-                throw new Error('L\'identité appUser n\'existe pas dans la wallet');
+                throw new Error(`L'identité ${userId} n'existe pas dans la wallet`);
             }
-            console.log('Identité appUser trouvée dans la wallet');
+            console.log(`Identité ${userId} trouvée dans la wallet`);
 
             this.gateway = new Gateway();
             await this.gateway.connect(ccp, {
                 wallet: this.wallet,
-                identity: 'appUser',
-                discovery: { enabled: true, asLocalhost: true },
-                eventHandlerOptions: {
-                    commitTimeout: 300,
-                    strategy: null
-                }
+                identity: userId,
+                discovery: { enabled: true, asLocalhost: true }
             });
             console.log('Gateway connectée');
 
@@ -48,74 +44,227 @@ class LandRegistryApp {
 
             this.contract = this.network.getContract(this.chaincodeName);
             console.log('Contract obtenu:', this.chaincodeName);
+
         } catch (error) {
             console.error('Erreur lors de l\'initialisation:', error);
             throw error;
         }
     }
 
-    sleep(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
-
-    async createLandTitle(titleId, owner, location, area, propertyType, maidsafeHash) {
+    async createLandTitle(userId, titleId, location, area, propertyType, maidsafeHash) {
         try {
-            console.log('Création du titre foncier...');
-            console.log('Paramètres:', { titleId, owner, location, area, propertyType, maidsafeHash });
-            
-            const transaction = this.contract.createTransaction('createLandTitle');
+            if (!this.contract) {
+                await this.initialize(userId);
+            }
+            console.log('Création du titre foncier...', {
+                userId, titleId, location, area, propertyType, maidsafeHash
+            });
+
+            let transaction = this.contract.createTransaction('createLandTitle');
+            transaction.setEndorsingPeers(['peer0.org1.example.com:7051']);
+
             const result = await transaction.submit(
                 titleId,
-                owner,
+                userId,
                 location,
                 area.toString(),
                 propertyType,
-                maidsafeHash
+                maidsafeHash || ''
             );
-            
-            console.log('Transaction soumise, attente de la confirmation...');
-            
-            // Attendre que la transaction soit propagée
-            await this.sleep(2000);
-            
-            const landTitle = JSON.parse(result.toString());
-            console.log('Titre foncier créé avec succès');
-            return landTitle;
+
+            console.log('Résultat de la création:', result.toString());
+            return JSON.parse(result.toString());
         } catch (error) {
-            console.error('Erreur détaillée lors de la création du titre:', error);
+            console.error('Erreur lors de la création du titre:', error);
             throw error;
         }
     }
 
-    async getLandTitle(titleId) {
+    async initiateSale(userId, titleId, price) {
         try {
-            console.log(`Recherche du titre: ${titleId}`);
-            // Essayer de récupérer le titre plusieurs fois en cas d'échec
-            for (let i = 0; i < 3; i++) {
-                try {
-                    const result = await this.contract.evaluateTransaction('getLandTitle', titleId);
-                    return JSON.parse(result.toString());
-                } catch (error) {
-                    if (i < 2) {
-                        console.log(`Tentative ${i + 1} échouée, nouvelle tentative dans 2 secondes...`);
-                        await this.sleep(2000);
-                    } else {
-                        throw error;
-                    }
-                }
+            if (!this.contract) {
+                await this.initialize(userId);
             }
+            let transaction = this.contract.createTransaction('initiateSale');
+            transaction.setEndorsingPeers(['peer0.org1.example.com:7051']);
+
+            const result = await transaction.submit(
+                titleId,
+                userId,
+                price.toString()
+            );
+            return JSON.parse(result.toString());
+        } catch (error) {
+            console.error('Erreur lors de l\'initiation de la vente:', error);
+            throw error;
+        }
+    }
+
+    async makePurchaseOffer(userId, titleId) {
+        try {
+            if (!this.contract) {
+                await this.initialize(userId);
+            }
+            let transaction = this.contract.createTransaction('makePurchaseOffer');
+            transaction.setEndorsingPeers(['peer0.org1.example.com:7051']);
+
+            const result = await transaction.submit(titleId, userId);
+            return JSON.parse(result.toString());
+        } catch (error) {
+            console.error('Erreur lors de la création de l\'offre:', error);
+            throw error;
+        }
+    }
+
+    async approveAsNotary(userId, titleId) {
+        try {
+            if (!this.contract) {
+                await this.initialize(userId);
+            }
+            let transaction = this.contract.createTransaction('approveAsNotary');
+            transaction.setEndorsingPeers(['peer0.org1.example.com:7051']);
+
+            const result = await transaction.submit(titleId, userId);
+            return JSON.parse(result.toString());
+        } catch (error) {
+            console.error('Erreur lors de l\'approbation notaire:', error);
+            throw error;
+        }
+    }
+
+    async approveAsSeller(userId, titleId) {
+        try {
+            if (!this.contract) {
+                await this.initialize(userId);
+            }
+            let transaction = this.contract.createTransaction('approveAsSeller');
+            transaction.setEndorsingPeers(['peer0.org1.example.com:7051']);
+
+            const result = await transaction.submit(titleId, userId);
+            return JSON.parse(result.toString());
+        } catch (error) {
+            console.error('Erreur lors de l\'approbation vendeur:', error);
+            throw error;
+        }
+    }
+
+    async approveAsBuyer(userId, titleId) {
+        try {
+            if (!this.contract) {
+                await this.initialize(userId);
+            }
+            let transaction = this.contract.createTransaction('approveAsBuyer');
+            transaction.setEndorsingPeers(['peer0.org1.example.com:7051']);
+
+            const result = await transaction.submit(titleId, userId);
+            return JSON.parse(result.toString());
+        } catch (error) {
+            console.error('Erreur lors de l\'approbation acheteur:', error);
+            throw error;
+        }
+    }
+
+    async finalizeSale(userId, titleId) {
+        try {
+            if (!this.contract) {
+                await this.initialize(userId);
+            }
+            let transaction = this.contract.createTransaction('finalizeSale');
+            transaction.setEndorsingPeers(['peer0.org1.example.com:7051']);
+
+            const result = await transaction.submit(titleId, userId);
+            return JSON.parse(result.toString());
+        } catch (error) {
+            console.error('Erreur lors de la finalisation:', error);
+            throw error;
+        }
+    }
+
+    async addLien(userId, titleId, lienHolder, amount, duration) {
+        try {
+            if (!this.contract) {
+                await this.initialize(userId);
+            }
+            let transaction = this.contract.createTransaction('addLien');
+            transaction.setEndorsingPeers(['peer0.org1.example.com:7051']);
+
+            const result = await transaction.submit(
+                titleId,
+                lienHolder,
+                amount.toString(),
+                duration.toString()
+            );
+            return JSON.parse(result.toString());
+        } catch (error) {
+            console.error('Erreur lors de l\'ajout de l\'hypothèque:', error);
+            throw error;
+        }
+    }
+
+    async removeLien(userId, titleId, lienId) {
+        try {
+            if (!this.contract) {
+                await this.initialize(userId);
+            }
+            let transaction = this.contract.createTransaction('removeLien');
+            transaction.setEndorsingPeers(['peer0.org1.example.com:7051']);
+
+            const result = await transaction.submit(titleId, lienId);
+            return JSON.parse(result.toString());
+        } catch (error) {
+            console.error('Erreur lors de la suppression de l\'hypothèque:', error);
+            throw error;
+        }
+    }
+
+    async getLandTitle(userId, titleId) {
+        try {
+            if (!this.contract) {
+                await this.initialize(userId);
+            }
+            const result = await this.contract.evaluateTransaction('getLandTitle', titleId);
+            return JSON.parse(result.toString());
         } catch (error) {
             console.error('Erreur lors de la récupération du titre:', error);
             throw error;
         }
     }
 
-    async queryTitlesByOwner(owner) {
+    async queryTitlesByOwner(userId, owner) {
         try {
+            if (!this.contract) {
+                await this.initialize(userId);
+            }
             const result = await this.contract.evaluateTransaction('queryTitlesByOwner', owner);
             return JSON.parse(result.toString());
         } catch (error) {
             console.error('Erreur lors de la recherche des titres:', error);
+            throw error;
+        }
+    }
+
+    async queryTitlesForSale(userId) {
+        try {
+            if (!this.contract) {
+                await this.initialize(userId);
+            }
+            const result = await this.contract.evaluateTransaction('queryTitlesForSale');
+            return JSON.parse(result.toString());
+        } catch (error) {
+            console.error('Erreur lors de la recherche des titres en vente:', error);
+            throw error;
+        }
+    }
+
+    async getTitleHistory(userId, titleId) {
+        try {
+            if (!this.contract) {
+                await this.initialize(userId);
+            }
+            const result = await this.contract.evaluateTransaction('getTitleHistory', titleId);
+            return JSON.parse(result.toString());
+        } catch (error) {
+            console.error('Erreur lors de la récupération de l\'historique:', error);
             throw error;
         }
     }
@@ -126,42 +275,6 @@ class LandRegistryApp {
             console.log('Déconnecté du gateway');
         }
     }
-}
-
-async function testApp() {
-    const app = new LandRegistryApp();
-    try {
-        console.log('Initialisation de l\'application...');
-        await app.initialize();
-        
-        console.log('\nCréation d\'un nouveau titre foncier...');
-        const newTitle = await app.createLandTitle(
-            'TITLE001',
-            'Jean Dupont',
-            '123 Rue de Paris',
-            150,
-            'TERRAIN',
-            'QmHash123'
-        );
-        console.log('Nouveau titre créé:', JSON.stringify(newTitle, null, 2));
-
-        console.log('\nRécupération du titre...');
-        const title = await app.getLandTitle('TITLE001');
-        console.log('Titre récupéré:', JSON.stringify(title, null, 2));
-
-        console.log('\nRecherche des titres par propriétaire...');
-        const ownerTitles = await app.queryTitlesByOwner('Jean Dupont');
-        console.log('Titres trouvés:', JSON.stringify(ownerTitles, null, 2));
-
-    } catch (error) {
-        console.error('Erreur dans le test:', error);
-    } finally {
-        await app.disconnect();
-    }
-}
-
-if (require.main === module) {
-    testApp();
 }
 
 module.exports = LandRegistryApp;
