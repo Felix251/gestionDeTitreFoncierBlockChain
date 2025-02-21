@@ -1,82 +1,153 @@
-# Nettoyage
+# Land Registry Blockchain Project
+
+## Overview
+This project implements a blockchain-based land registry system using Hyperledger Fabric, providing a secure and transparent platform for managing property titles.
+
+## Prerequisites
+- Docker
+- Node.js
+- Hyperledger Fabric
+
+## Project Structure
+```
+project-root/
+│
+├── network/
+│   └── network.sh            # Network management script
+│
+├── land-registry/
+│   ├── chaincode/            # Blockchain chaincode
+│   └── application/          # Application logic
+│
+└── application/              # API and frontend
+```
+
+## Setup and Installation
+
+### Network Setup
+1. Clean existing Docker containers and volumes:
+```bash
 ./network.sh down
 docker rm -f $(docker ps -aq)
 docker volume prune -f
+```
 
-# Démarrer le réseau avec un seul pair
+2. Start the network with a single peer:
+```bash
 ./network.sh up createChannel -c landreg -ca
+```
 
-# Déployer le chaincode avec une politique d'endorsement simple
-./network.sh deployCC -ccn land-registry -ccp ../land-registry/chaincode -ccl javascript -c landreg -ccep "AND('Org1MSP.peer')"
+### Chaincode Deployment
+Deploy the chaincode with a simple endorsement policy:
+```bash
+./network.sh deployCC -ccn land-registry \
+    -ccp ../land-registry/chaincode \
+    -ccl javascript \
+    -c landreg \
+    -ccep "AND('Org1MSP.peer')"
+```
 
-# Chaincode dependencies
+### Dependencies Installation
+#### Chaincode Dependencies
+```bash
 cd land-registry/chaincode
 npm install fabric-contract-api fabric-shim
+```
 
-# Application dependencies
+#### Application Dependencies
+```bash
 cd ../application
 npm install fabric-network fabric-ca-client express body-parser
 npm install swagger-jsdoc swagger-ui-express
+```
 
-
-# OU tu peux juste faire un npm install dans chacun des dossiers ou il y a package json
-
-# Enregistrer les utilisateurs
+### User Registration
+```bash
 cd ../land-registry/application
 node registerUser.js
+```
 
-# Demarrer l'api
+### Start the API
+```bash
 node api/server.js
+```
 
+## API Usage with Swagger
 
+### Authentication
+1. Open Swagger UI
+2. Click the "Authorize" button (🔓)
+3. Enter one of the following user IDs:
+   - `SELLER1` (Seller)
+   - `BUYER1` (Buyer)
+   - `NOTARY1` (Notary)
 
-# Tester les Api sur Swagger
+### Creating a Land Title
+**Endpoint:** `POST http://localhost:3000/api/seller/titles`
 
-# Dans l'interface Swagger, il faut d'abord définir l'en-tête d'authentification :
-# Cliquez sur le bouton "Authorize" (🔓) en haut de la page Swagger
-# Dans le champ "user-id", entrez une des valeurs suivantes :
-# SELLER1 (pour le vendeur)
-# BUYER1 (pour l'acheteur)
-# NOTARY1 (pour le notaire)
-# Cliquez sur "Authorize"
+**Example Request Body:**
+```json
+{
+   "titleId": "TITLE001",
+   "location": "123 Rue de Paris",
+   "area": 150,
+   "propertyType": "TERRAIN",
+   "maidsafeHash": "QmHash123"
+}
+```
 
-# Exemple pour creer un nouveau titre foncier voici l'url http://localhost:3000/api/seller/titles
-# Et voici un exemple d'objet: 
-<!-- {
-  "titleId": "TITLE001",
-  "location": "123 Rue de Paris",
-  "area": 150,
-  "propertyType": "TERRAIN",
-  "maidsafeHash": "QmHash123"
-} -->
+## Debugging and Verification
 
-# Vérifier les transactions dans Hyperledger Fabric
-# 1. D'abord, entrer dans le conteneur CLI
+### Hyperledger Fabric CLI
+
+1. Enter the CLI container:
+```bash
 docker exec -it cli bash
+```
 
-# 2. Configurer les variables d'environnement pour Org1
+2. Set environment variables for Org1:
+```bash
 export CORE_PEER_TLS_ENABLED=true
 export CORE_PEER_LOCALMSPID="Org1MSP"
 export CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
 export CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp
 export CORE_PEER_ADDRESS=peer0.org1.example.com:7051
+```
 
-# 3. Maintenant vous pouvez lister les chaincodes installés
+### Chaincode Queries
+
+List installed chaincodes:
+```bash
 peer chaincode list --installed
+```
 
-# 4. Pour interroger le chaincode (obtenir un titre par exemple)
+Query a specific land title:
+```bash
 peer chaincode query -C landreg -n land-registry -c '{"Args":["getLandTitle","TITLE001"]}'
+```
 
-# 5. Pour voir tous les titres en vente
+List titles for sale:
+```bash
 peer chaincode query -C landreg -n land-registry -c '{"Args":["queryTitlesForSale"]}'
+```
 
-# Vérifier un titre spécifique
+## Additional Verification Methods
+
+### Verify a Title
+```bash
 node verify.js TITLE001
+```
 
-# Vérifier via l'API
+### API Verification
+Get title history:
+```bash
 curl http://localhost:3000/api/titles/TITLE001/history \
-  -H "user-id: SELLER1"
+   -H "user-id: SELLER1"
+```
 
-# Vérifier l'état actuel
+Check current title status:
+```bash
 curl http://localhost:3000/api/titles/verify/TITLE001 \
-  -H "user-id: SELLER1"
+   -H "user-id: SELLER1"
+```
+
