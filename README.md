@@ -10,7 +10,7 @@ This project implements a blockchain-based land registry system using Hyperledge
 
 ## Project Structure
 ```
-project-root/
+fabric-samplest/
 │
 ├── network/
 │   └── network.sh            # Network management script
@@ -18,8 +18,6 @@ project-root/
 ├── land-registry/
 │   ├── chaincode/            # Blockchain chaincode
 │   └── application/          # Application logic
-│
-└── application/              # API and frontend
 ```
 
 ## Setup and Installation
