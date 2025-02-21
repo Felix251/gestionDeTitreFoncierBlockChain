@@ -1,0 +1,16 @@
+{
+  "name": "land-registry",
+  "version": "1.0.0",
+  "description": "Smart contract pour la gestion des titres fonciers",
+  "main": "index.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "start": "fabric-chaincode-node start"
+  },
+  "dependencies": {
+    "fabric-contract-api": "^2.5.8",
+    "fabric-shim": "^2.5.8"
+  }
+}

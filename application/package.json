@@ -1,0 +1,15 @@
+{
+  "name": "land-registry-app",
+  "version": "1.0.0",
+  "description": "Application cliente pour le registre foncier",
+  "main": "app.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "body-parser": "^1.20.3",
+    "express": "^4.21.2",
+    "fabric-ca-client": "^2.2.19",
+    "fabric-network": "^2.2.19"
+  }
+}
