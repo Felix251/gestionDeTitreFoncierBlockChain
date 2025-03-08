@@ -12,7 +12,7 @@ This project implements a blockchain-based land registry system using Hyperledge
 ```
 fabric-samplest/
 │
-├── network/
+├── test-network/
 │   └── network.sh            # Network management script
 │
 ├── land-registry/
@@ -49,14 +49,13 @@ Deploy the chaincode with a simple endorsement policy:
 #### Chaincode Dependencies
 ```bash
 cd land-registry/chaincode
-npm install fabric-contract-api fabric-shim
+npm install 
 ```
 
 #### Application Dependencies
 ```bash
 cd ../application
-npm install fabric-network fabric-ca-client express body-parser
-npm install swagger-jsdoc swagger-ui-express
+npm install 
 ```
 
 ### User Registration
@@ -71,7 +70,7 @@ node api/server.js
 ```
 
 ## API Usage with Swagger
-
+Link to access swagger interface: `http://localhost:3000/api-docs/`
 ### Authentication
 1. Open Swagger UI
 2. Click the "Authorize" button (🔓)

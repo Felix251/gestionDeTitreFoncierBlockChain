@@ -23,7 +23,7 @@ class LandRegistry extends Contract {
             titleId,
             owner,
             location,
-            area: parseFloat(area),
+            area: parseFloat(area),   
             propertyType,
             status: 'ACTIVE',
             maidsafeHash,
